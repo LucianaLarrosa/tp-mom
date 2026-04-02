@@ -39,3 +39,11 @@ Instalar los dependencias de la suite de pruebas:
 Instalar una versión de Golang superior a `1.24`.
 Instalar los dependencias de la suite de pruebas:
 `go mod download`
+
+## Resolución
+
+Implementación en Python de las interfaces de middleware, `work queues` y `exchanges`. 
+
+### Tests
+
+![Tests passing](imgs/tests_tp-mom.png)
