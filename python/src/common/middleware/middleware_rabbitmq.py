@@ -5,12 +5,14 @@ class MessageMiddlewareQueueRabbitMQ(MessageMiddlewareQueue):
 
     def __init__(self, host, queue_name):
         self.queue_name = queue_name
+        self._on_message_callback = None
         
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue=self.queue_name)
 
     def _pika_callback(self, ch, method, properties, body):
+        #Adapta la firma del callback de pika a la interfaz del middleware.
         ack = lambda: ch.basic_ack(delivery_tag=method.delivery_tag)
         nack = lambda: ch.basic_nack(delivery_tag=method.delivery_tag)
         self._on_message_callback(body, ack, nack)
@@ -61,12 +63,14 @@ class MessageMiddlewareExchangeRabbitMQ(MessageMiddlewareExchange):
     def __init__(self, host, exchange_name, routing_keys):
         self.exchange_name = exchange_name
         self.routing_keys = routing_keys
+        self._on_message_callback = None
 
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
         self.channel = self.connection.channel()
         self.channel.exchange_declare(exchange=self.exchange_name, exchange_type='direct')
         
     def _pika_callback(self, ch, method, properties, body):
+        #Adapta la firma del callback de pika a la interfaz del middleware.
         ack = lambda: ch.basic_ack(delivery_tag=method.delivery_tag)
         nack = lambda: ch.basic_nack(delivery_tag=method.delivery_tag)
         self._on_message_callback(body, ack, nack)
