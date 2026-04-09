@@ -7,12 +7,6 @@ from .middleware import (
     MessageMiddlewareCloseError,
 )
 
-_DISCONNECTION_ERRORS = (
-    pika.exceptions.AMQPConnectionError,
-    pika.exceptions.ConnectionClosedByBroker,
-    pika.exceptions.StreamLostError,
-)
-
 
 def _make_pika_callback(on_message_callback):
     # Adapta la firma del callback de pika a la interfaz del middleware.
@@ -32,6 +26,7 @@ class MessageMiddlewareQueueRabbitMQ(MessageMiddlewareQueue):
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue=self.queue_name, durable=True)
+        self.channel.confirm_delivery()
 
     def start_consuming(self, on_message_callback):
         try:
@@ -41,7 +36,7 @@ class MessageMiddlewareQueueRabbitMQ(MessageMiddlewareQueue):
                 on_message_callback=_make_pika_callback(on_message_callback),
             )
             self.channel.start_consuming()
-        except _DISCONNECTION_ERRORS:
+        except pika.exceptions.AMQPConnectionError:
             raise MessageMiddlewareDisconnectedError()
         except pika.exceptions.AMQPError:
             raise MessageMiddlewareMessageError()
@@ -49,7 +44,7 @@ class MessageMiddlewareQueueRabbitMQ(MessageMiddlewareQueue):
     def stop_consuming(self):
         try:
             self.channel.stop_consuming()
-        except _DISCONNECTION_ERRORS:
+        except pika.exceptions.AMQPConnectionError:
             raise MessageMiddlewareDisconnectedError()
 
     def send(self, message):
@@ -62,7 +57,7 @@ class MessageMiddlewareQueueRabbitMQ(MessageMiddlewareQueue):
                     delivery_mode=pika.DeliveryMode.Persistent
                 ),
             )
-        except _DISCONNECTION_ERRORS:
+        except pika.exceptions.AMQPConnectionError:
             raise MessageMiddlewareDisconnectedError()
         except pika.exceptions.AMQPError:
             raise MessageMiddlewareMessageError()
@@ -85,6 +80,7 @@ class MessageMiddlewareExchangeRabbitMQ(MessageMiddlewareExchange):
         self.channel.exchange_declare(
             exchange=self.exchange_name, exchange_type="direct", durable=True
         )
+        self.channel.confirm_delivery()
 
     def start_consuming(self, on_message_callback):
         try:
@@ -101,7 +97,7 @@ class MessageMiddlewareExchangeRabbitMQ(MessageMiddlewareExchange):
                 on_message_callback=_make_pika_callback(on_message_callback),
             )
             self.channel.start_consuming()
-        except _DISCONNECTION_ERRORS:
+        except pika.exceptions.AMQPConnectionError:
             raise MessageMiddlewareDisconnectedError()
         except pika.exceptions.AMQPError:
             raise MessageMiddlewareMessageError()
@@ -109,7 +105,7 @@ class MessageMiddlewareExchangeRabbitMQ(MessageMiddlewareExchange):
     def stop_consuming(self):
         try:
             self.channel.stop_consuming()
-        except _DISCONNECTION_ERRORS:
+        except pika.exceptions.AMQPConnectionError:
             raise MessageMiddlewareDisconnectedError()
 
     def send(self, message):
@@ -123,7 +119,7 @@ class MessageMiddlewareExchangeRabbitMQ(MessageMiddlewareExchange):
                         delivery_mode=pika.DeliveryMode.Persistent
                     ),
                 )
-        except _DISCONNECTION_ERRORS:
+        except pika.exceptions.AMQPConnectionError:
             raise MessageMiddlewareDisconnectedError()
         except pika.exceptions.AMQPError:
             raise MessageMiddlewareMessageError()
